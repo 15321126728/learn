@@ -17,17 +17,27 @@ public class Main {
         scanner.close();
     }
 
-    /*表达式解析器*/
+    /*表达式解析器
+     * 实现第四部分基本概念规范：
+     * - 支持带符号整数（可带前导0）
+     * - 支持变量因子（x, x^exp）
+     * - 支持常数因子（带符号整数）
+     * - 支持表达式因子（(expr)^exp）
+     * - 支持项（因子的乘法）
+     * - 支持表达式（项的加减法）
+     * - 处理空白字符（仅空格）
+     */
 
     private static class Solver {
         private final String expr;
         private int pos;
 
         public Solver(String input) {
-            // 去除空白符
+            // 去除空白符（规范：空白字符包含且仅包含空格）
             String s = input.replaceAll("\\s+", "");
 
-            // 简化多重符号
+            // 简化多重符号（++ -> +, -- -> +, +- -> -, -+ -> -）
+            // 这样可以正确处理如 "- -1" 和 "+ -2" 这样的表达式
             boolean changed = true;
             while (changed) {
                 String original = s;
@@ -66,6 +76,8 @@ public class Main {
         }
 
         // 解析表达式：Expr -> Term { + Term | - Term }
+        // 规范：由加法和减法运算符连接若干项组成
+        // 示例：-1 + x ^ 233 - x ^ 06 +x
         private Poly parseExpr() {
             Poly left = parseTerm();
 
@@ -87,6 +99,8 @@ public class Main {
         }
 
         // 解析项：Term -> [Sign] Factor { * Factor }
+        // 规范：由乘法运算符连接若干因子组成，第一个因子之前可以带正号或负号
+        // 示例：x * 02, + x * 02, - +3 * x
         private Poly parseTerm() {
             int sign = 1;
             if (peek() == '+') {
@@ -110,6 +124,10 @@ public class Main {
         }
 
         // 解析因子：Factor -> (Expr)^exp | x^exp | Constant
+        // 规范：包含三种因子类型
+        // 1. 表达式因子：(x^2 + 2*x + x)^2
+        // 2. 变量因子：x^+2, x^02, x^2, x
+        // 3. 常数因子：233, -16
         private Poly parseFactor() {
             Poly res;
             if (peek() == '(') {
@@ -136,6 +154,9 @@ public class Main {
             return res;
         }
 
+        // 解析非负带符号整数（用于指数）
+        // 规范：支持前导+号和前导0
+        // 示例：+2, 02, 2
         private int parseSimpleInt() {
             if (peek() == '+') {
                 consume();
@@ -150,6 +171,9 @@ public class Main {
             return Integer.parseInt(sb.toString());
         }
 
+        // 解析带符号整数（用于常数）
+        // 规范：支持前导0的十进制带符号整数，正号可省略
+        // 示例：+02, -16, 20220928
         private BigInteger parseBigInteger() {
             StringBuilder sb = new StringBuilder();
             if (peek() == '+' || peek() == '-') {
@@ -165,7 +189,10 @@ public class Main {
         }
     }
 
-    /*多项式类：支持加减乘和乘方*/
+    /*多项式类：支持加减乘和乘方
+     * 用于表示和计算数学表达式的结果
+     * 使用 Map<Integer, BigInteger> 存储指数和对应的系数
+     */
 
     private static class Poly {
         private final Map<Integer, BigInteger> terms = new HashMap<>();
