@@ -22,7 +22,27 @@ public class Main {
         // Parse and solve
         Solver solver = new Solver(funcDef);
         Expr result = solver.parse(expr);
-        System.out.println(result.simplify().toString());
+        String output = result.simplify().toString();
+        
+        // Remove unnecessary outer parentheses
+        if (output.startsWith("(") && output.endsWith(")")) {
+            // Check if these are truly outer parentheses
+            int depth = 0;
+            boolean isOuter = true;
+            for (int i = 0; i < output.length() - 1; i++) {
+                if (output.charAt(i) == '(') depth++;
+                else if (output.charAt(i) == ')') depth--;
+                if (depth == 0) {
+                    isOuter = false;
+                    break;
+                }
+            }
+            if (isOuter) {
+                output = output.substring(1, output.length() - 1);
+            }
+        }
+        
+        System.out.println(output);
     }
 
     // Base class for all expression types
