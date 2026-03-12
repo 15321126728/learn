@@ -5,28 +5,28 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         
-        // Read number of function definitions
+        // 读取自定义函数的个数
         int n = Integer.parseInt(scanner.nextLine().trim());
         
-        // Read function definition if exists
+        // 如果存在函数定义，则读取
         String funcDef = null;
         if (n == 1) {
             funcDef = scanner.nextLine();
         }
         
-        // Read expression to evaluate
+        // 读取待求值的表达式
         String expr = scanner.nextLine();
         
         scanner.close();
         
-        // Parse and solve
+        // 解析并求解
         Solver solver = new Solver(funcDef);
         Expr result = solver.parse(expr);
         String output = result.simplify().toString();
         
-        // Remove unnecessary outer parentheses
+        // 移除不必要的外层括号
         if (output.startsWith("(") && output.endsWith(")")) {
-            // Check if these are truly outer parentheses
+            // 检查这些是否真的是外层括号
             int depth = 0;
             boolean isOuter = true;
             for (int i = 0; i < output.length() - 1; i++) {
@@ -45,20 +45,20 @@ public class Main {
         System.out.println(output);
     }
 
-    // Base class for all expression types
+    // 所有表达式类型的基类
     private static abstract class Expr {
         public abstract Expr simplify();
         public abstract boolean isZero();
         public abstract Expr substitute(String var, Expr value);
         
-        // Check if two expressions are equal by checking if their difference is zero
+        // 通过检查两个表达式的差是否为零来判断它们是否相等
         public boolean equals(Expr other) {
             Expr diff = new BinaryExpr(this, other, '-').simplify();
             return diff.isZero();
         }
     }
 
-    // Polynomial expression (sum of terms)
+    // 多项式表达式（项的和）
     private static class PolyExpr extends Expr {
         private final Map<Integer, BigInteger> terms = new HashMap<>();
 
@@ -99,7 +99,7 @@ public class Main {
         }
 
         public PolyExpr pow(int exp) {
-            // Handle 0^0 = 1 edge case
+            // 处理0^0 = 1的边界情况
             if (exp == 0) {
                 return new PolyExpr(BigInteger.ONE, 0);
             }
@@ -139,17 +139,17 @@ public class Main {
         @Override
         public Expr substitute(String var, Expr value) {
             if (var.equals("x")) {
-                // Don't substitute if there's no x in this expression
+                // 如果表达式中没有x，则不需要替换
                 if (terms.isEmpty() || (terms.size() == 1 && terms.containsKey(0))) {
-                    // This is a constant, no x to substitute
+                    // 这是一个常数，没有x需要替换
                     return this;
                 }
                 
-                // Simplify value first to try to get a PolyExpr
+                // 首先化简value，尝试得到一个PolyExpr
                 Expr simplifiedValue = value.simplify();
                 
                 if (simplifiedValue instanceof PolyExpr) {
-                    // Normal polynomial substitution
+                    // 正常的多项式替换
                     PolyExpr polyValue = (PolyExpr) simplifiedValue;
                     PolyExpr result = new PolyExpr(BigInteger.ZERO, 0);
                     for (Map.Entry<Integer, BigInteger> entry : terms.entrySet()) {
@@ -161,10 +161,10 @@ public class Main {
                     }
                     return result;
                 } else {
-                    // Value is not a polynomial (e.g., ExpExpr)
-                    // We need to build a more complex expression
-                    // For a polynomial like 3*x^2 + 2*x + 1 with value v,
-                    // we want: 3*v^2 + 2*v + 1
+                    // value不是多项式（例如，ExpExpr）
+                    // 我们需要构建一个更复杂的表达式
+                    // 对于像3*x^2 + 2*x + 1这样的多项式，用值v替换后，
+                    // 我们想要：3*v^2 + 2*v + 1
                     
                     Expr result = null;
                     List<Integer> exps = new ArrayList<>(terms.keySet());
@@ -175,24 +175,24 @@ public class Main {
                         Expr term;
                         
                         if (exp == 0) {
-                            // Constant term
+                            // 常数项
                             term = new PolyExpr(coeff, 0);
                         } else {
-                            // Build coeff * value^exp
-                            // First, handle value^exp
+                            // 构建 coeff * value^exp
+                            // 首先，处理 value^exp
                             Expr poweredValue;
                             if (exp == 1) {
                                 poweredValue = value;
                             } else {
-                                // For exp > 1, we'd need to create v*v*v... which is complex
-                                // For now, represent as multiplication chain
+                                // 对于exp > 1，我们需要创建v*v*v...，这比较复杂
+                                // 目前，表示为乘法链
                                 poweredValue = value;
                                 for (int i = 1; i < exp; i++) {
                                     poweredValue = new BinaryExpr(poweredValue, value, '*');
                                 }
                             }
                             
-                            // Then multiply by coefficient
+                            // 然后乘以系数
                             if (coeff.equals(BigInteger.ONE)) {
                                 term = poweredValue;
                             } else if (coeff.equals(BigInteger.valueOf(-1))) {
@@ -254,7 +254,7 @@ public class Main {
         }
     }
 
-    // Exponential expression exp(expr)
+    // 指数表达式 exp(expr)
     private static class ExpExpr extends Expr {
         private Expr arg;
         private final int power;
@@ -273,7 +273,7 @@ public class Main {
                 return new PolyExpr(BigInteger.ONE, 0);
             }
             
-            // If power is 0, return 1
+            // 如果幂次为0，返回1
             if (power == 0) {
                 return new PolyExpr(BigInteger.ONE, 0);
             }
@@ -284,7 +284,7 @@ public class Main {
 
         @Override
         public boolean isZero() {
-            return false; // exp(x) is never zero
+            return false; // exp(x)永远不为零
         }
 
         @Override
@@ -296,20 +296,20 @@ public class Main {
         public String toString() {
             String argStr = arg.toString();
             
-            // Check if arg needs parentheses
-            // Simple variable or constant doesn't need extra parens
+            // 检查参数是否需要括号
+            // 简单的变量或常数不需要额外的括号
             boolean needsParens = false;
             
             if (arg instanceof PolyExpr) {
                 PolyExpr poly = (PolyExpr) arg;
-                // If it's more than a single term, or a complex expression, add parens
+                // 如果是多项，或者是复杂表达式，添加括号
                 if (poly.terms.size() > 1 || (poly.terms.size() == 1 && !argStr.equals("x") && poly.terms.containsKey(0))) {
                     needsParens = true;
                 } else if (poly.terms.size() == 1) {
-                    // Single term - check if it's complex (like x^2)
+                    // 单项 - 检查是否复杂（如x^2）
                     int exp = poly.terms.keySet().iterator().next();
                     if (exp > 1 || poly.terms.get(exp).abs().compareTo(BigInteger.ONE) > 0) {
-                        // It's like 2*x or x^2, doesn't need parens for exp
+                        // 类似2*x或x^2，对于exp不需要括号
                         needsParens = false;
                     }
                 }
@@ -330,7 +330,7 @@ public class Main {
         }
     }
 
-    // Binary operation expression
+    // 二元运算表达式
     private static class BinaryExpr extends Expr {
         private final Expr left;
         private final Expr right;
@@ -347,13 +347,13 @@ public class Main {
             Expr l = left.simplify();
             Expr r = right.simplify();
             
-            // For exp expressions, we can combine: exp(a) * exp(b) = exp(a+b)
-            // But don't simplify the argument further
+            // 对于exp表达式，我们可以合并：exp(a) * exp(b) = exp(a+b)
+            // 但不进一步化简参数
             if (op == '*' && l instanceof ExpExpr && r instanceof ExpExpr) {
                 ExpExpr el = (ExpExpr) l;
                 ExpExpr er = (ExpExpr) r;
                 if (el.power == 1 && er.power == 1) {
-                    // Create the combined argument without further simplification
+                    // 创建组合参数，不进一步化简
                     Expr combinedArg = new BinaryExpr(el.arg, er.arg, '+');
                     return new ExpExpr(combinedArg, 1);
                 }
@@ -377,7 +377,7 @@ public class Main {
 
         @Override
         public boolean isZero() {
-            return false; // Conservative
+            return false; // 保守策略
         }
 
         @Override
@@ -391,7 +391,7 @@ public class Main {
         }
     }
 
-    // Selection expression [(A==B)?C:D]
+    // 选择式表达式 [(A==B)?C:D]
     private static class SelectionExpr extends Expr {
         private final Expr condition1;
         private final Expr condition2;
@@ -410,7 +410,7 @@ public class Main {
             Expr c1 = condition1.simplify();
             Expr c2 = condition2.simplify();
             
-            // Check if c1 == c2 by checking if c1 - c2 == 0
+            // 通过检查c1 - c2 == 0来判断c1 == c2
             if (c1.equals(c2)) {
                 return trueExpr.simplify();
             } else {
@@ -420,7 +420,7 @@ public class Main {
 
         @Override
         public boolean isZero() {
-            return false; // Will be evaluated during simplification
+            return false; // 将在化简过程中求值
         }
 
         @Override
@@ -439,7 +439,7 @@ public class Main {
         }
     }
 
-    // Function definition
+    // 函数定义
     private static class Function {
         private final String name;
         private final String param;
@@ -448,17 +448,17 @@ public class Main {
         public Function(String name, String param, Expr body) {
             this.name = name;
             this.param = param;
-            // Don't simplify the body when storing
+            // 存储时不化简函数体
             this.body = body;
         }
 
         public Expr call(Expr arg) {
-            // Substitute and then simplify
+            // 替换后再化简
             return body.substitute(param, arg).simplify();
         }
     }
 
-    // Parser/Solver
+    // 解析器/求解器
     private static class Solver {
         private String expr;
         private int pos;
@@ -471,14 +471,14 @@ public class Main {
         }
 
         private void parseFunctionDefinition(String def) {
-            // Remove whitespace
+            // 删除空白字符
             def = def.replaceAll("\\s+", "");
             
-            // Parse f(x) = expression
+            // 解析 f(x) = 表达式
             int eqPos = def.indexOf('=');
             String body = def.substring(eqPos + 1);
             
-            // Parse the body expression
+            // 解析函数体表达式
             this.expr = body;
             this.pos = 0;
             Expr bodyExpr = parseExpr();
@@ -487,10 +487,10 @@ public class Main {
         }
 
         public Expr parse(String input) {
-            // Remove whitespace and simplify signs
+            // 删除空白字符并简化符号
             String s = input.replaceAll("\\s+", "");
             
-            // Simplify multiple signs
+            // 简化多重符号
             boolean changed = true;
             while (changed) {
                 String original = s;
@@ -566,7 +566,7 @@ public class Main {
         private Expr parseFactor() {
             Expr res;
             
-            // Selection factor: [(A==B)?C:D]
+            // 选择式因子：[(A==B)?C:D]
             if (peek() == '[') {
                 consume(); // '['
                 consume(); // '('
@@ -582,7 +582,7 @@ public class Main {
                 consume(); // ']'
                 res = new SelectionExpr(cond1, cond2, trueExpr, falseExpr);
             }
-            // Expression factor: (expr)^exp
+            // 表达式因子：(expr)^exp
             else if (peek() == '(') {
                 consume();
                 res = parseExpr();
@@ -590,14 +590,14 @@ public class Main {
                 if (peek() == '^') {
                     consume();
                     int exp = parseSimpleInt();
-                    // Simplify first to get PolyExpr, then apply power
+                    // 先化简以获得PolyExpr，然后应用幂次
                     res = res.simplify();
                     if (res instanceof PolyExpr) {
                         res = ((PolyExpr) res).pow(exp);
                     }
                 }
             }
-            // Exp function or function call
+            // Exp函数或函数调用
             else if (peek() == 'e' || peek() == 'f') {
                 if (peek() == 'e') {
                     // exp(factor)
@@ -622,7 +622,7 @@ public class Main {
                     res = function.call(arg);
                 }
             }
-            // Variable factor: x^exp
+            // 变量因子：x^exp
             else if (peek() == 'x') {
                 consume();
                 int exp = 1;
@@ -632,7 +632,7 @@ public class Main {
                 }
                 res = new PolyExpr(BigInteger.ONE, exp);
             }
-            // Constant factor
+            // 常数因子
             else {
                 BigInteger val = parseBigInteger();
                 res = new PolyExpr(val, 0);
